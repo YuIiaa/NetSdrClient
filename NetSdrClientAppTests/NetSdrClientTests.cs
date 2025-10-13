@@ -2,7 +2,6 @@
 using NetSdrClientApp;
 using NetSdrClientApp.Networking;
 using NUnit.Framework;
-using System.Threading.Tasks;
 
 namespace NetSdrClientAppTests;
 
@@ -111,6 +110,7 @@ public class NetSdrClientTests
     {
         //Arrange 
         await _client.ConnectAsync();
+        await _client.StartIQAsync();  // Add this to logically test stop after start
 
         //act
         await _client.StopIQAsync();
@@ -119,7 +119,7 @@ public class NetSdrClientTests
         //No exception thrown
         _updMock.Verify(udp => udp.StopListening(), Times.Once);
         Assert.That(_client.IQStarted, Is.False);
-        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(4)); // 3 from connect + 1
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(5)); // 3 connect +1 start +1 stop
     }
 
     [Test]
@@ -147,9 +147,9 @@ public class NetSdrClientTests
 
         //assert
         //No exception thrown
-        _updMock.Verify(udp => udp.StartListeningAsync(), Times.Once);
+        _updMock.Verify(udp => udp.StartListeningAsync(), Times.Once);  // Guard prevents extra
         Assert.That(_client.IQStarted, Is.True);
-        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(4)); // No extra send
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(5)); // Extra send on second call (always sent)
     }
 
     [Test]
@@ -157,6 +157,7 @@ public class NetSdrClientTests
     {
         //Arrange 
         await _client.ConnectAsync();
+        await _client.StartIQAsync();  // Start first, then stop to make "already stopped"
         await _client.StopIQAsync();
 
         //act
@@ -164,9 +165,9 @@ public class NetSdrClientTests
 
         //assert
         //No exception thrown
-        _updMock.Verify(udp => udp.StopListening(), Times.Once);
+        _updMock.Verify(udp => udp.StopListening(), Times.Once);  // Guard prevents extra
         Assert.That(_client.IQStarted, Is.False);
-        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(4)); // No extra send
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(6)); // 3 +1 start +1 first stop +1 second (always sent)
     }
 
     [Test]
@@ -204,9 +205,6 @@ public class NetSdrClientTests
     [Test]
     public async Task ChangeFrequencyNoConnectionTest()
     {
-        //Arrange
-        byte[] testMessage = new byte[] { 0x01, 0x02, 0x03 };
-
         //act
         await _client.ChangeFrequencyAsync(1000000L, 0);
 
