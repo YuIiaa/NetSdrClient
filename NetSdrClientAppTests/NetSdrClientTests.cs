@@ -1,6 +1,8 @@
 ﻿using Moq;
 using NetSdrClientApp;
 using NetSdrClientApp.Networking;
+using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace NetSdrClientAppTests;
 
@@ -75,7 +77,6 @@ public class NetSdrClientTests
     [Test]
     public async Task StartIQNoConnectionTest()
     {
-
         //act
         await _client.StartIQAsync();
 
@@ -115,5 +116,61 @@ public class NetSdrClientTests
         Assert.That(_client.IQStarted, Is.False);
     }
 
-    //TODO: cover the rest of the NetSdrClient code here
+    [Test]
+    public async Task ConnectAsyncMultipleCallsTest()
+    {
+        //act
+        await _client.ConnectAsync();
+        await _client.ConnectAsync();
+
+        //assert
+        _tcpMock.Verify(tcp => tcp.Connect(), Times.Once); // Should only connect once
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Exactly(3));
+    }
+
+    [Test]
+    public async Task SendMessageAsyncTest()
+    {
+        //Arrange
+        await _client.ConnectAsync();
+        byte[] testMessage = new byte[] { 0x01, 0x02, 0x03 };
+
+        //act
+        await _client.SendMessageAsync(testMessage);
+
+        //assert
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(testMessage), Times.Once);
+    }
+
+    [Test]
+    public async Task SendMessageAsyncNoConnectionTest()
+    {
+        //Arrange
+        byte[] testMessage = new byte[] { 0x01, 0x02, 0x03 };
+
+        //act
+        await _client.SendMessageAsync(testMessage);
+
+        //assert
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.Never);
+        _tcpMock.VerifyGet(tcp => tcp.Connected, Times.AtLeastOnce);
+    }
+
+    [Test]
+    public async Task StopIQNoConnectionTest()
+    {
+        //act
+        await _client.StopIQAsync();
+
+        //assert
+        _updMock.Verify(udp => udp.StopListening(), Times.Never);
+        Assert.That(_client.IQStarted, Is.False);
+    }
+
+    [Test]
+    public async Task IQStartedPropertyInitialStateTest()
+    {
+        //assert
+        Assert.That(_client.IQStarted, Is.False);
+    }
 }
