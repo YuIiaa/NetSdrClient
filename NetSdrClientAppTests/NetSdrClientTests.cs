@@ -1,12 +1,14 @@
 ﻿using Moq;
 using NetSdrClientApp;
 using NetSdrClientApp.Networking;
+using System.Reflection;
+
 
 namespace NetSdrClientAppTests;
 
 public class NetSdrClientTests
 {
-    NetSdrClient _client;
+        NetSdrClient _client;
     Mock<ITcpClient> _tcpMock;
     Mock<IUdpClient> _updMock;
 
@@ -114,6 +116,47 @@ public class NetSdrClientTests
         _updMock.Verify(tcp => tcp.StopListening(), Times.Once);
         Assert.That(_client.IQStarted, Is.False);
     }
+    // 1. Покриття StopIQAsync() при відсутності з’єднання
+    [Test]
+    public async Task StopIQAsync_NoActiveConnection_PrintsMessage()
+    {
+        // Arrange
+        _tcpMock.Setup(tcp => tcp.Connected).Returns(false);
+        var sw = new StringWriter();          // без using
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
 
+        try
+        {
+            // Act
+            await _client.StopIQAsync();
+
+            // Assert
+            string output = sw.ToString().Trim();
+            Assert.That(output, Does.Contain("No active connection."));
+        }
+        finally
+        {
+            Console.SetOut(originalOut);      // повертаємо Console.Out назад
+        }
+    }
+
+    //  2. Покриття ChangeFrequencyAsync()
+    [Test]
+    public async Task ChangeFrequencyAsync_SendsTcpRequest()
+    {
+        // Arrange
+        _tcpMock.Setup(tcp => tcp.Connected).Returns(true);
+        await _client.ConnectAsync();
+        long hz = 7000000;
+        int channel = 2;
+
+        // Act
+        await _client.ChangeFrequencyAsync(hz, channel);
+
+        // Assert
+        _tcpMock.Verify(tcp => tcp.SendMessageAsync(It.IsAny<byte[]>()), Times.AtLeastOnce);
+    }
+    
     //TODO: cover the rest of the NetSdrClient code here
 }
