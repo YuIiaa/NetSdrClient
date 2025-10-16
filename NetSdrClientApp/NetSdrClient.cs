@@ -1,4 +1,4 @@
-﻿using NetSdrClientApp.Messages;
+﻿﻿using NetSdrClientApp.Messages;
 using NetSdrClientApp.Networking;
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using static NetSdrClientApp.Messages.NetSdrMessageHelper;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NetSdrClientApp
 {
@@ -54,11 +55,6 @@ namespace NetSdrClientApp
 
         public void Disconect()
         {
-            if (IQStarted)
-            {
-                _udpClient.StopListening();
-                IQStarted = false;
-            }
             _tcpClient.Disconnect();
         }
 
@@ -70,7 +66,7 @@ namespace NetSdrClientApp
                 return;
             }
 
-;           var iqDataMode = (byte)0x80;
+           var iqDataMode = (byte)0x80;
             var start = (byte)0x02;
             var fifo16bitCaptureMode = (byte)0x01;
             var n = (byte)1;
@@ -94,27 +90,21 @@ namespace NetSdrClientApp
                 return;
             }
 
-            // Always send stop command for safety
             var stop = (byte)0x01;
+
             var args = new byte[] { 0, stop, 0, 0 };
+
             var msg = NetSdrMessageHelper.GetControlItemMessage(MsgTypes.SetControlItem, ControlItemCodes.ReceiverState, args);
+
             await SendTcpRequest(msg);
 
-            if (IQStarted)
-            {
-                IQStarted = false;
-                _udpClient.StopListening();
-            }
+            IQStarted = false;
+
+            _udpClient.StopListening();
         }
 
         public async Task ChangeFrequencyAsync(long hz, int channel)
         {
-            if (!_tcpClient.Connected)
-            {
-                Console.WriteLine("No active connection.");
-                return;
-            }
-
             var channelArg = (byte)channel;
             var frequencyArg = BitConverter.GetBytes(hz).Take(5);
             var args = new[] { channelArg }.Concat(frequencyArg).ToArray();
@@ -124,7 +114,7 @@ namespace NetSdrClientApp
             await SendTcpRequest(msg);
         }
 
-        private void _udpClient_MessageReceived(object? sender, byte[] e)
+        private static void _udpClient_MessageReceived(object? sender, byte[] e)
         {
             NetSdrMessageHelper.TranslateMessage(e, out MsgTypes type, out ControlItemCodes code, out ushort sequenceNum, out byte[] body);
             var samples = NetSdrMessageHelper.GetSamples(16, body);
