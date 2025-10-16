@@ -70,20 +70,7 @@ namespace NetSdrClientApp
                 return;
             }
 
-            if (IQStarted)
-            {
-                // Already started, but still send command for safety
-                var iqDataMode = (byte)0x80;
-                var start = (byte)0x02;
-                var fifo16bitCaptureMode = (byte)0x01;
-                var n = (byte)1;
-                var args = new[] { iqDataMode, start, fifo16bitCaptureMode, n };
-                var msg = NetSdrMessageHelper.GetControlItemMessage(MsgTypes.SetControlItem, ControlItemCodes.ReceiverState, args);
-                await SendTcpRequest(msg);
-                return;
-            }
-
-            var iqDataMode = (byte)0x80;
+;           var iqDataMode = (byte)0x80;
             var start = (byte)0x02;
             var fifo16bitCaptureMode = (byte)0x01;
             var n = (byte)1;
