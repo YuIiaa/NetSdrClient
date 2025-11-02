@@ -40,6 +40,8 @@ namespace NetSdrClientApp.Messages
 
         public static byte[] GetControlItemMessage(MsgTypes type, ControlItemCodes itemCode, byte[] parameters)
         {
+            // Навмисне порушення — створюємо залежність Messages → Networking
+            var _ = typeof(NetSdrClientApp.Networking.ITcpClient);
             return GetMessage(type, itemCode, parameters);
         }
 
