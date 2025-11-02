@@ -15,6 +15,9 @@ namespace NetSdrClientAppTests
         [Test]
         public void GetControlItemMessageTest()
         {
+            
+            // Навмисне порушення — створюємо залежність Messages → Networking
+            var _ = typeof(NetSdrClientApp.Networking.ITcpClient);
             //Arrange
             var type = NetSdrMessageHelper.MsgTypes.Ack;
             var code = NetSdrMessageHelper.ControlItemCodes.ReceiverState;
