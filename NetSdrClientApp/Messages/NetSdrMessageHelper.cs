@@ -28,7 +28,7 @@ namespace NetSdrClientApp.Messages
             DataItem3
         }
 
-        public enum ControlItemCodes
+        public enum ControlItemCodes : ushort
         {
             None = 0,
             IQOutputDataSampleRate = 0x00B8,
@@ -40,7 +40,6 @@ namespace NetSdrClientApp.Messages
 
         public static byte[] GetControlItemMessage(MsgTypes type, ControlItemCodes itemCode, byte[] parameters)
         {
-          
             return GetMessage(type, itemCode, parameters);
         }
 
@@ -110,7 +109,7 @@ namespace NetSdrClientApp.Messages
         public static IEnumerable<int> GetSamples(ushort sampleSize, byte[] body)
         {
             sampleSize /= 8; //to bytes
-            if (sampleSize  > 4)
+            if (sampleSize > 4)
             {
                 throw new ArgumentOutOfRangeException();
             }
